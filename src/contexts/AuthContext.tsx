@@ -27,6 +27,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const verifyAccess = async (cpf: string, userType: 'admin' | 'employee') => {
     setLoading(true);
     try {
+      console.log(`Verificando acesso para CPF: ${cpf}, Tipo de usuário: ${userType}`);
+
       // Verificar se é admin tentando acessar
       if (userType === 'admin' && cpf !== '00922256403') {
         throw new Error('CPF não autorizado para acesso administrativo');
@@ -47,9 +49,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (!userData) {
+        console.log('Usuário não encontrado ou inativo');
         throw new Error('Usuário não encontrado ou inativo');
       }
 
+      console.log('Usuário encontrado:', userData);
       setUser(userData);
       localStorage.setItem('ponto_user', JSON.stringify(userData));
     } catch (error) {
@@ -72,10 +76,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function useAuth() {
+export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
-}
+};
