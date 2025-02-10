@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState } from 'react';
 import { supabase } from '../lib/supabase';
+import { logToFile } from '../utils/log';
 
 interface User {
   id: string;
@@ -27,14 +28,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const verifyAccess = async (cpf: string, userType: 'admin' | 'employee') => {
     setLoading(true);
     try {
-      console.log(`Verificando acesso para CPF: ${cpf}, Tipo de usuário: ${userType}`);
+      const logMessage = `Verificando acesso para CPF: ${cpf}, Tipo de usuário: ${userType}`;
+      console.log(logMessage);
+      logToFile(logMessage);
 
-      // Verificar se é admin tentando acessar
       if (userType === 'admin' && cpf !== '00922256403') {
         throw new Error('CPF não autorizado para acesso administrativo');
       }
 
-      // Buscar usuário no banco de dados
       const { data: userData, error } = await supabase
         .from('users')
         .select('id, cpf, name, user_type')
@@ -44,20 +45,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .maybeSingle();
 
       if (error) {
-        console.error('Erro ao buscar usuário:', error);
+        const errorMessage = `Erro ao buscar usuário: ${error.message}`;
+        console.error(errorMessage);
+        logToFile(errorMessage);
         throw new Error('Erro ao verificar acesso');
       }
 
       if (!userData) {
-        console.log('Usuário não encontrado ou inativo');
-        throw new Error('Usuário não encontrado ou inativo');
+        const notFoundMessage = 'Usuário não encontrado ou inativo';
+        console.log(notFoundMessage);
+        logToFile(notFoundMessage);
+        throw new Error(notFoundMessage);
       }
 
-      console.log('Usuário encontrado:', userData);
+      const successMessage = `Usuário encontrado: ${JSON.stringify(userData)}`;
+      console.log(successMessage);
+      logToFile(successMessage);
       setUser(userData);
       localStorage.setItem('ponto_user', JSON.stringify(userData));
     } catch (error) {
-      console.error('Erro de acesso:', error);
+      const accessErrorMessage = `Erro de acesso: ${error.message}`;
+      console.error(accessErrorMessage);
+      logToFile(accessErrorMessage);
       throw error;
     } finally {
       setLoading(false);
