@@ -32,7 +32,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log(logMessage);
       logToFile(logMessage);
 
-      if (userType === 'admin' && cpf !== '00922256403') {
+      const adminCpf = process.env.REACT_APP_ADMIN_CPF;
+      if (userType === 'admin' && cpf !== adminCpf) {
         throw new Error('CPF não autorizado para acesso administrativo');
       }
 
