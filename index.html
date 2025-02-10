@@ -7,7 +7,7 @@
     <script type="text/javascript">
       // Tratamento do redirecionamento do GitHub Pages
       (function(l) {
-        if (l.search[1] === '/' ) {
+        if (l.search[1] === '/') {
           var decoded = l.search.slice(1).split('&').map(function(s) { 
             return s.replace(/~and~/g, '&')
           }).join('?');
@@ -20,6 +20,7 @@
   </head>
   <body>
     <div id="root"></div>
+    <!-- Atualize o caminho aqui -->
     <script type="module" src="./src/main.tsx"></script>
   </body>
 </html>
