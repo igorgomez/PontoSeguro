@@ -5,7 +5,6 @@ const logFilePath = path.join(__dirname, 'access.log');
 
 export function logToFile(message: string) {
   const timestamp = new Date().toISOString();
-  const logMessage = `${timestamp} - ${message}\n`;
-
-  fs.appendFileSync(logFilePath, logMessage, { encoding: 'utf8' });
+  const logMessage = `${timestamp} - ${message}`;
+  console.log(logMessage);
 }
