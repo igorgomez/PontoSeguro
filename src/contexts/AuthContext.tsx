@@ -68,7 +68,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(userData);
       localStorage.setItem('ponto_user', JSON.stringify(userData));
     } catch (error) {
-      const accessErrorMessage = `Erro de acesso: ${(error as Error).message}`;
+      const accessErrorMessage = `Erro de acesso: ${error.message}`;
       console.error(accessErrorMessage);
       logToFile(accessErrorMessage);
       throw error;
