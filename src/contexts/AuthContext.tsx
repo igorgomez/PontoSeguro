@@ -34,7 +34,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       const adminCpf = process.env.REACT_APP_ADMIN_CPF;
       if (userType === 'admin' && cpf !== adminCpf) {
-        throw new Error('CPF não autorizado para acesso administrativo');
+        const unauthorizedMessage = `CPF ${cpf} não autorizado para acesso administrativo`;
+        console.error(unauthorizedMessage);
+        logToFile(unauthorizedMessage);
+        throw new Error(unauthorizedMessage);
       }
 
       const { data: userData, error } = await supabase
@@ -53,7 +56,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (!userData) {
-        const notFoundMessage = 'Usuário não encontrado ou inativo';
+        const notFoundMessage = `Usuário com CPF ${cpf} e tipo ${userType} não encontrado ou inativo`;
         console.log(notFoundMessage);
         logToFile(notFoundMessage);
         throw new Error(notFoundMessage);
