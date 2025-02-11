@@ -44,7 +44,7 @@ export default function Login() {
       <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
         <div className="flex items-center justify-center mb-8">
           <Clock className="w-12 h-12 text-blue-600" />
-          <h1 className="text-2xl font-bold ml-2">Ponto Eletrônico</h1>
+          <h1 className="text-2xl font-bold ml-2">PontoSeguro</h1>
         </div>
 
         {!showCpfInput ? (

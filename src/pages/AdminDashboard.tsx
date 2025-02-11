@@ -23,7 +23,7 @@ export default function AdminDashboard() {
           <div className="flex justify-between h-16">
             <div className="flex">
               <div className="flex-shrink-0 flex items-center">
-                <h1 className="text-xl font-bold text-blue-600">Ponto Eletrônico</h1>
+                <h1 className="text-xl font-bold text-blue-600">PontoSeguro</h1>
               </div>
               <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
                 <Link

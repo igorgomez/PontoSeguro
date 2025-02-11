@@ -21,7 +21,7 @@ export default function EmployeeDashboard() {
           <div className="flex justify-between h-16">
             <div className="flex-shrink-0 flex items-center">
               <Clock className="w-8 h-8 text-blue-600" />
-              <h1 className="ml-2 text-xl font-bold text-blue-600">Ponto Eletrônico</h1>
+              <h1 className="ml-2 text-xl font-bold text-blue-600">PontoSeguro</h1>
             </div>
             <div className="flex items-center">
               <span className="text-gray-700 mr-4">Olá, {user?.name}</span>
