@@ -32,14 +32,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log(logMessage);
       logToFile(logMessage);
 
-      const adminCpf = process.env.REACT_APP_ADMIN_CPF;
-      if (userType === 'admin' && cpf !== adminCpf) {
-        const unauthorizedMessage = `CPF ${cpf} não autorizado para acesso administrativo`;
-        console.error(unauthorizedMessage);
-        logToFile(unauthorizedMessage);
-        throw new Error(unauthorizedMessage);
-      }
-
       const { data: userData, error } = await supabase
         .from('users')
         .select('id, cpf, name, user_type')
@@ -60,6 +52,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.log(notFoundMessage);
         logToFile(notFoundMessage);
         throw new Error(notFoundMessage);
+      }
+
+      if (userData.user_type !== userType) {
+        const unauthorizedMessage = `Usuário com CPF ${cpf} não possui privilégios de ${userType}`;
+        console.error(unauthorizedMessage);
+        logToFile(unauthorizedMessage);
+        throw new Error(unauthorizedMessage);
       }
 
       const successMessage = `Usuário encontrado: ${JSON.stringify(userData)}`;
