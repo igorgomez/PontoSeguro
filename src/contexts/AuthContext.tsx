@@ -36,13 +36,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log(`CPF: ${cpf}, UserType: ${userType}`);
       logToFile(`CPF: ${cpf}, UserType: ${userType}`);
 
+      // Log the query being executed
+      console.log(`Executando consulta: SELECT id, cpf, name, user_type, active FROM users WHERE cpf = '${cpf}' AND user_type = '${userType}' AND active = true`);
+      logToFile(`Executando consulta: SELECT id, cpf, name, user_type, active FROM users WHERE cpf = '${cpf}' AND user_type = '${userType}' AND active = true`);
+
       const { data: userData, error } = await supabase
         .from('users')
         .select('id, cpf, name, user_type, active')
         .eq('cpf', cpf)
         .eq('user_type', userType)
         .eq('active', true)
-        .maybeSingle();
+        .single();
 
       console.log('Dados do usuário:', userData);
       logToFile(`Dados do usuário: ${JSON.stringify(userData)}`);
