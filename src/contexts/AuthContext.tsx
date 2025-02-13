@@ -42,7 +42,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       const { data: userData, error } = await supabase
         .from('users')
-        .select('id, cpf, name, user_type, active')
+        .select('id, cpf, name, user_type, active', { headers: { Accept: 'application/json' } })
         .eq('cpf', cpf)
         .eq('user_type', userType)
         .eq('active', true)
