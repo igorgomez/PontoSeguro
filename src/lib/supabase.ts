@@ -8,15 +8,3 @@ if (!supabaseUrl || !supabaseAnonKey) {
 }
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
-
-// Test the connection
-supabase
-  .from('users')
-  .select('*')
-  .then(({ data, error }) => {
-    if (error) {
-      console.error('Error connecting to Supabase:', error.message);
-    } else {
-      console.log('Connection to Supabase successful:', data);
-    }
-  });
