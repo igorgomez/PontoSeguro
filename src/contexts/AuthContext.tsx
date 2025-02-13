@@ -46,7 +46,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .eq('cpf', cpf)
         .eq('user_type', userType)
         .eq('active', true)
-        .single();
 
       console.log('Dados do usuário:', userData);
       logToFile(`Dados do usuário: ${JSON.stringify(userData)}`);
