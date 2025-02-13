@@ -32,6 +32,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log(logMessage);
       logToFile(logMessage);
 
+      // Log the values of cpf and userType
+      console.log(`CPF: ${cpf}, UserType: ${userType}`);
+      logToFile(`CPF: ${cpf}, UserType: ${userType}`);
+
       const { data: userData, error } = await supabase
         .from('users')
         .select('id, cpf, name, user_type, active')
