@@ -9,7 +9,8 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "predeploy": "npm run build",
-    "deploy": "gh-pages -d dist"
+    "preversion": "npm version patch -m 'Release %s'",
+    "deploy": "npm run build && gh-pages -d dist"    
   },
   "dependencies": {
     "@hookform/resolvers": "^3.3.4",
