@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import replace from '@rollup/plugin-replace'; // Adicione esta linha
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -7,10 +8,14 @@ export default defineConfig({
     react(),
     replace({
       preventAssignment: true,
-      'process.env.VERSION': JSON.stringify(process.env.npm_package_version),
+      values: { // Estrutura correta para o plugin replace
+        'process.env.VERSION': JSON.stringify(
+          process.env.npm_package_version || '0.0.0'
+        ),
+      }
     }),
   ],
-  base: '/PontoSeguro/', // Adiciona o base path para o GitHub Pages
+  base: '/PontoSeguro/',
   optimizeDeps: {
     exclude: ['lucide-react'],
   },
