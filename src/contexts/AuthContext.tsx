@@ -34,11 +34,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       const { data: userData, error } = await supabase
         .from('users')
-        .select('id, cpf, name, user_type')
+        .select('id, cpf, name, user_type, active')
         .eq('cpf', cpf)
         .eq('user_type', userType)
         .eq('active', true)
         .maybeSingle();
+
+      console.log('Dados do usuário:', userData);
+      logToFile(`Dados do usuário: ${JSON.stringify(userData)}`);
 
       if (error) {
         const errorMessage = `Erro ao buscar usuário: ${error.message}`;
@@ -54,11 +57,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw new Error(notFoundMessage);
       }
 
-      if (userData.user_type !== userType) {
-        const unauthorizedMessage = `Usuário com CPF ${cpf} não possui privilégios de ${userType}`;
-        console.error(unauthorizedMessage);
-        logToFile(unauthorizedMessage);
-        throw new Error(unauthorizedMessage);
+      if (!userData.active) {
+        const inactiveMessage = `Usuário com CPF ${cpf} está inativo`;
+        console.log(inactiveMessage);
+        logToFile(inactiveMessage);
+        throw new Error(inactiveMessage);
       }
 
       const successMessage = `Usuário encontrado: ${JSON.stringify(userData)}`;
