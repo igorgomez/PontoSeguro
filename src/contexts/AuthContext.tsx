@@ -7,6 +7,7 @@ interface User {
   cpf: string;
   name: string;
   user_type: 'admin' | 'employee';
+  active: boolean; // Explicitly include the 'active' field
 }
 
 interface AuthContextType {
@@ -14,6 +15,8 @@ interface AuthContextType {
   loading: boolean;
   verifyAccess: (cpf: string, userType: 'admin' | 'employee') => Promise<void>;
   signOut: () => void;
+  error: string | null; // Add an error state to manage errors
+  setError: React.Dispatch<React.SetStateAction<string | null>>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -24,52 +27,58 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return savedUser ? JSON.parse(savedUser) : null;
   });
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null); //Added error state
+
 
   const verifyAccess = async (cpf: string, userType: 'admin' | 'employee') => {
     setLoading(true);
+    setError(null); // Reset error on each attempt
     try {
       const logMessage = `Verificando acesso para CPF: ${cpf}, Tipo de usuário: ${userType}`;
       console.log(logMessage);
       logToFile(logMessage);
 
-      const { data: user, error } = await supabase
+      const { data: users, error, status } = await supabase
         .from('users')
         .select('id, cpf, name, user_type, active')
         .eq('cpf', cpf)
         .eq('user_type', userType)
-        .eq('active', true)
-        .single(); // Retorna um objeto único, em vez de array
+        .eq('active', true);
 
       if (error) {
-        const errorMessage = `Erro ao buscar usuário: ${error.message}`;
+        let errorMessage = `Erro ao buscar usuário: ${error.message}`;
+        if (status === 406) {
+          errorMessage = "CPF duplicado ou usuário não encontrado.";
+        } else if (status === 404){
+          errorMessage = "Usuário não encontrado.";
+        }
         console.error(errorMessage);
         logToFile(errorMessage);
-        throw new Error('Erro ao verificar acesso'); // Re-lança o erro para tratamento externo
+        setError(errorMessage); // Set the error state
+        throw new Error(errorMessage);
       }
 
-      if (!user) {
-        const notFoundMessage = `Usuário com CPF ${cpf} e tipo ${userType} não encontrado.`;
-        console.log(notFoundMessage);
-        logToFile(notFoundMessage);
-        throw new Error(notFoundMessage);
+      if (!users || users.length === 0) {
+        setError("Usuário não encontrado.");
+        throw new Error("Usuário não encontrado.");
       }
 
-
-      setUser(user);
-      try {
-        localStorage.setItem('ponto_user', JSON.stringify(user));
-      } catch (e) {
-        console.error("Erro ao salvar no localStorage:", e);
-        logToFile(`Erro ao salvar no localStorage: ${e}`);
+      if (users.length > 1) {
+        setError("Múltiplos usuários encontrados com o mesmo CPF. Contate o administrador.");
+        throw new Error("Múltiplos usuários encontrados com o mesmo CPF.");
       }
 
-      console.log("Usuário logado com sucesso:", user);
-      logToFile(`Usuário logado com sucesso: ${JSON.stringify(user)}`);
+      setUser(users[0]);
+      localStorage.setItem('ponto_user', JSON.stringify(users[0]));
+      console.log("Usuário logado com sucesso:", users[0]);
+      logToFile(`Usuário logado com sucesso: ${JSON.stringify(users[0])}`);
 
-    } catch (error) {
-      // Tratar erros específicos aqui, como erros de rede
+    } catch (error: any) {
       console.error("Erro de acesso:", error);
       logToFile(`Erro de acesso: ${error}`);
+      //If error is already set, don't overwrite it
+      setError(error?.message || "Erro desconhecido");
+
     } finally {
       setLoading(false);
     }
@@ -78,10 +87,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = () => {
     setUser(null);
     localStorage.removeItem('ponto_user');
+    setError(null); // Clear error on sign out
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, verifyAccess, signOut }}>
+    <AuthContext.Provider value={{ user, loading, verifyAccess, signOut, error, setError }}>
       {children}
     </AuthContext.Provider>
   );
