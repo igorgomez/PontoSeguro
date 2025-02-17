@@ -32,55 +32,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log(logMessage);
       logToFile(logMessage);
 
-      // Log the values of cpf and userType
-      console.log(`CPF: ${cpf}, UserType: ${userType}`);
-      logToFile(`CPF: ${cpf}, UserType: ${userType}`);
-
-      // Log the query being executed
-      console.log(`Executando consulta: SELECT id, cpf, name, user_type, active FROM users WHERE cpf = '${cpf}' AND user_type = '${userType}' AND active = true`);
-      logToFile(`Executando consulta: SELECT id, cpf, name, user_type, active FROM users WHERE cpf = '${cpf}' AND user_type = '${userType}' AND active = true`);
-
-      const { data: userData, error } = await supabase
+      const { data: user, error } = await supabase
         .from('users')
         .select('id, cpf, name, user_type, active')
         .eq('cpf', cpf)
         .eq('user_type', userType)
         .eq('active', true)
-
-      console.log('Dados do usuário:', userData);
-      logToFile(`Dados do usuário: ${JSON.stringify(userData)}`);
+        .single(); // Retorna um objeto único, em vez de array
 
       if (error) {
         const errorMessage = `Erro ao buscar usuário: ${error.message}`;
         console.error(errorMessage);
         logToFile(errorMessage);
-        throw new Error('Erro ao verificar acesso');
+        throw new Error('Erro ao verificar acesso'); // Re-lança o erro para tratamento externo
       }
 
-      if (!userData) {
-        const notFoundMessage = `Usuário com CPF ${cpf} e tipo ${userType} não encontrado ou inativo`;
+      if (!user) {
+        const notFoundMessage = `Usuário com CPF ${cpf} e tipo ${userType} não encontrado.`;
         console.log(notFoundMessage);
         logToFile(notFoundMessage);
         throw new Error(notFoundMessage);
       }
 
-      if (!userData.active) {
-        const inactiveMessage = `Usuário com CPF ${cpf} está inativo`;
-        console.log(inactiveMessage);
-        logToFile(inactiveMessage);
-        throw new Error(inactiveMessage);
+
+      setUser(user);
+      try {
+        localStorage.setItem('ponto_user', JSON.stringify(user));
+      } catch (e) {
+        console.error("Erro ao salvar no localStorage:", e);
+        logToFile(`Erro ao salvar no localStorage: ${e}`);
       }
 
-      const successMessage = `Usuário encontrado: ${JSON.stringify(userData)}`;
-      console.log(successMessage);
-      logToFile(successMessage);
-      setUser(userData);
-      localStorage.setItem('ponto_user', JSON.stringify(userData));
+      console.log("Usuário logado com sucesso:", user);
+      logToFile(`Usuário logado com sucesso: ${JSON.stringify(user)}`);
+
     } catch (error) {
-      const accessErrorMessage = `Erro de acesso: ${error.message}`;
-      console.error(accessErrorMessage);
-      logToFile(accessErrorMessage);
-      throw error;
+      // Tratar erros específicos aqui, como erros de rede
+      console.error("Erro de acesso:", error);
+      logToFile(`Erro de acesso: ${error}`);
     } finally {
       setLoading(false);
     }
