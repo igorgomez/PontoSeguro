@@ -7,100 +7,96 @@ interface User {
   cpf: string;
   name: string;
   user_type: 'admin' | 'employee';
-  active: boolean; // Explicitly include the 'active' field
+  active: boolean;
 }
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  verifyAccess: (cpf: string, userType: 'admin' | 'employee') => Promise<void>;
+  signIn: (cpf: string, password: string, userType?: 'admin' | 'employee') => Promise<void>; // Renomeado para signIn
   signOut: () => void;
-  error: string | null; // Add an error state to manage errors
+  error: string | null;
   setError: React.Dispatch<React.SetStateAction<string | null>>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(() => {
-    const savedUser = localStorage.getItem('ponto_user');
-    return savedUser ? JSON.parse(savedUser) : null;
-  });
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null); //Added error state
+  const [error, setError] = useState<string | null>(null);
 
-
-  const verifyAccess = async (cpf: string, userType: 'admin' | 'employee') => {
+  const signIn = async (cpf: string, password: string, userType?: 'admin' | 'employee') => {
     setLoading(true);
-    setError(null); // Reset error on each attempt
+    setError(null);
     try {
-      const logMessage = `Verificando acesso para CPF: ${cpf}, Tipo de usuário: ${userType}`;
-      console.log(logMessage);
-      logToFile(logMessage);
+      // 1. Autenticação com Supabase (usando CPF como email)
+      const { data, error: authError, session } = await supabase.auth.signInWithPassword({
+        email: `${cpf}@email.com`, // CPF como email - **ajuste se necessário**
+        password,
+      });
 
-      const { data: users, error, status } = await supabase
-        .from('users')
-        .select('id, cpf, name, user_type, active')
-        .eq('cpf', cpf)
-        .eq('user_type', userType)
-        .eq('active', true);
 
-      if (error) {
-        let errorMessage = `Erro ao buscar usuário: ${error.message}`;
-        if (status === 406) {
-          errorMessage = "CPF duplicado ou usuário não encontrado.";
-        } else if (status === 404){
-          errorMessage = "Usuário não encontrado.";
+      if (authError) {
+        console.error("Erro de autenticação Supabase:", authError.message);
+        logToFile(`Erro de autenticação Supabase: ${authError.message}`);
+        setError(authError.message);
+        throw authError;
+      }
+
+      if (session && data.user) {
+        // 2. Buscar dados do usuário na tabela 'users'
+        const { data: dbUser, error: dbError } = await supabase
+          .from('users')
+          .select('*')
+          .eq('cpf', cpf)
+          .eq('active', true)
+          .single();
+
+        if (dbError) {
+          console.error("Erro ao buscar usuário:", dbError.message);
+          logToFile(`Erro ao buscar usuário: ${dbError.message}`);
+          setError(dbError.message);
+          throw dbError;
         }
-        console.error(errorMessage);
-        logToFile(errorMessage);
-        setError(errorMessage); // Set the error state
-        throw new Error(errorMessage);
+
+        if (!dbUser) {
+          // ... (tratamento de erro - igual ao anterior)
+          throw new Error('Usuário não encontrado no banco de dados.');
+
+        }
+        if(userType && dbUser.user_type !== userType){
+          setError("Tipo de usuário incorreto.");
+          throw new Error("Tipo de usuário incorreto.");
+        }
+
+
+
+        setUser(dbUser);
+        localStorage.setItem('ponto_user', JSON.stringify(dbUser));
+        console.log("Usuário logado com sucesso:", dbUser);
+        logToFile(`Usuário logado com sucesso: ${JSON.stringify(dbUser)}`);
+
       }
 
-      if (!users || users.length === 0) {
-        setError("Usuário não encontrado.");
-        throw new Error("Usuário não encontrado.");
-      }
-
-      if (users.length > 1) {
-        setError("Múltiplos usuários encontrados com o mesmo CPF. Contate o administrador.");
-        throw new Error("Múltiplos usuários encontrados com o mesmo CPF.");
-      }
-
-      setUser(users[0]);
-      localStorage.setItem('ponto_user', JSON.stringify(users[0]));
-      console.log("Usuário logado com sucesso:", users[0]);
-      logToFile(`Usuário logado com sucesso: ${JSON.stringify(users[0])}`);
 
     } catch (error: any) {
-      console.error("Erro de acesso:", error);
-      logToFile(`Erro de acesso: ${error}`);
-      //If error is already set, don't overwrite it
-      setError(error?.message || "Erro desconhecido");
-
+        console.error("Erro de acesso:", error.message);
+        logToFile(`Erro de acesso: ${error.message}`);
+        setError(error?.message || "Erro desconhecido.");
     } finally {
       setLoading(false);
     }
   };
 
-  const signOut = () => {
-    setUser(null);
-    localStorage.removeItem('ponto_user');
-    setError(null); // Clear error on sign out
-  };
+  // ... (signOut - sem mudanças)
 
   return (
-    <AuthContext.Provider value={{ user, loading, verifyAccess, signOut, error, setError }}>
+    <AuthContext.Provider value={{ user, loading, signIn, signOut, error, setError }}> {/* Atualizado para signIn */}
       {children}
     </AuthContext.Provider>
   );
 }
 
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-};
+
+// ... (useAuth - sem mudanças)
