@@ -7,105 +7,89 @@ interface User {
   cpf: string;
   name: string;
   user_type: 'admin' | 'employee';
-  active: boolean;
 }
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  signIn: (cpf: string, password: string, userType?: 'admin' | 'employee') => Promise<void>;
+  verifyAccess: (cpf: string, userType: 'admin' | 'employee') => Promise<void>;
   signOut: () => void;
-  error: string | null;
 }
 
-const AuthContext = createContext<AuthContextType | null>(null);
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider: React.FC = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [user, setUser] = useState<User | null>(() => {
+    const savedUser = localStorage.getItem('ponto_user');
+    return savedUser ? JSON.parse(savedUser) : null;
+  });
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  const signIn = async (cpf: string, password: string, userType?: 'admin' | 'employee') => {
+  const verifyAccess = async (cpf: string, userType: 'admin' | 'employee') => {
     setLoading(true);
-    setError(null);
-
     try {
-      const { data, error: authError, session } = await supabase.auth.signInWithPassword({
-        email: `${cpf}@email.com`, // CPF como email - **ajuste se necessário**
-        password,
-      });
+      const logMessage = `Verificando acesso para CPF: ${cpf}, Tipo de usuário: ${userType}`;
+      console.log(logMessage);
+      logToFile(logMessage);
 
-      if (authError) {
-        // Log do erro (console e arquivo)
-        console.error("Erro de autenticação Supabase:", authError.message);
-        logToFile(`Erro de autenticação Supabase: ${authError.message}`);
-        setError(authError.message);
-        throw authError; 
+      const { data: user, error } = await supabase
+        .from('users')
+        .select('id, cpf, name, user_type, active')
+        .eq('cpf', cpf)
+        .eq('user_type', userType)
+        .eq('active', true)
+        .single(); // Retorna um objeto único, em vez de array
+
+      if (error) {
+        const errorMessage = `Erro ao buscar usuário: ${error.message}`;
+        console.error(errorMessage);
+        logToFile(errorMessage);
+        throw new Error('Erro ao verificar acesso'); // Re-lança o erro para tratamento externo
       }
 
-      if (session && data.user) {
-        const { data: dbUser, error: dbError } = await supabase
-          .from('users')
-          .select('*')
-          .eq('cpf', cpf)
-          .eq('active', true)
-          .single();
-
-        if (dbError) {
-          // Log do erro (console e arquivo)
-          console.error("Erro ao buscar usuário:", dbError.message);
-          logToFile(`Erro ao buscar usuário: ${dbError.message}`);
-          setError(dbError.message);
-          throw dbError;
-        }
-
-        if (!dbUser) {
-          setError('Usuário não encontrado no banco de dados.');
-          throw new Error('Usuário não encontrado no banco de dados.');
-        }
-
-        if (userType && dbUser.user_type !== userType) {
-          setError("Tipo de usuário incorreto.");
-          throw new Error("Tipo de usuário incorreto.");
-        }
-
-        setUser(dbUser);
-        localStorage.setItem('ponto_user', JSON.stringify(dbUser));
-        console.log("Usuário logado com sucesso:", dbUser);
-        logToFile(`Usuário logado com sucesso: ${JSON.stringify(dbUser)}`);
+      if (!user) {
+        const notFoundMessage = `Usuário com CPF ${cpf} e tipo ${userType} não encontrado.`;
+        console.log(notFoundMessage);
+        logToFile(notFoundMessage);
+        throw new Error(notFoundMessage);
       }
-    } catch (error: any) {  // Captura erros genéricos
-      console.error("Erro geral de acesso:", error.message); // Log mais descritivo
-      logToFile(`Erro geral de acesso: ${error.message}`);
-      setError(error.message || "Erro desconhecido."); // Define a mensagem de erro no estado
+
+
+      setUser(user);
+      try {
+        localStorage.setItem('ponto_user', JSON.stringify(user));
+      } catch (e) {
+        console.error("Erro ao salvar no localStorage:", e);
+        logToFile(`Erro ao salvar no localStorage: ${e}`);
+      }
+
+      console.log("Usuário logado com sucesso:", user);
+      logToFile(`Usuário logado com sucesso: ${JSON.stringify(user)}`);
+
+    } catch (error) {
+      // Tratar erros específicos aqui, como erros de rede
+      console.error("Erro de acesso:", error);
+      logToFile(`Erro de acesso: ${error}`);
     } finally {
       setLoading(false);
     }
   };
 
   const signOut = () => {
-    supabase.auth.signOut();  // Certifique-se de deslogar do Supabase também
     setUser(null);
     localStorage.removeItem('ponto_user');
-    setError(null);
   };
 
-
-
-  const memoedValue = React.useMemo(() => ({ user, loading, signIn, signOut, error }), [user, loading, error]);
-
   return (
-    <AuthContext.Provider value={memoedValue}>
+    <AuthContext.Provider value={{ user, loading, verifyAccess, signOut }}>
       {children}
     </AuthContext.Provider>
   );
-};
-
-
+}
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (!context) {
+  if (context === undefined) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
