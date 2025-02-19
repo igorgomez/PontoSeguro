@@ -1,7 +1,7 @@
 {
   "name": "PontoSeguro",
   "private": true,
-  "version": "0.0.1",
+  "version": "0.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -9,8 +9,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "predeploy": "npm run build",
-    "preversion": "npm version patch -m 'Release %s'",
-    "deploy": "npm run build && gh-pages -d dist"    
+    "deploy": "gh-pages -d dist"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.3.4",
@@ -25,7 +24,6 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.9.1",
-    "@rollup/plugin-replace": "^5.0.2", 
     "@types/react": "^18.3.5",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.1",
